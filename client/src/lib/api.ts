@@ -1,5 +1,17 @@
+import { supabase } from "./supabase";
 import type { HomeContent } from "./content";
 import { DEFAULT_CONTENT, normalizeHomeContent } from "./content";
+
+async function authHeaders(): Promise<Record<string, string>> {
+  if (!supabase) return {};
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Local backend API (used until the Supabase project is connected).
@@ -11,11 +23,13 @@ async function request<T>(
   options?: RequestInit & { json?: unknown }
 ): Promise<T> {
   const { json, ...init } = options ?? {};
+  const extra = await authHeaders();
   const response = await fetch(path, {
     credentials: "same-origin",
     ...init,
     headers: {
       ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
+      ...extra,
       ...init.headers,
     },
     body: json !== undefined ? JSON.stringify(json) : init.body,

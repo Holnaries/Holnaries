@@ -129,8 +129,44 @@ async function isAdmin(req: Request): Promise<boolean> {
   }
 }
 
+function supabaseConfig(): { url: string; key: string } {
+  const url =
+    process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const key =
+    process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+  return { url, key };
+}
+
+async function verifySupabaseAdmin(req: Request): Promise<boolean> {
+  const { url, key } = supabaseConfig();
+  if (!url || !key) return false;
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : "";
+  if (!token) return false;
+  try {
+    const userRes = await fetch(`${url}/auth/v1/user`, {
+      headers: { apikey: key, Authorization: `Bearer ${token}` },
+    });
+    if (!userRes.ok) return false;
+    const user = (await userRes.json()) as { id?: string };
+    if (!user?.id) return false;
+    const adminRes = await fetch(
+      `${url}/rest/v1/admin_users?user_id=eq.${encodeURIComponent(user.id)}&select=user_id`,
+      { headers: { apikey: key, Authorization: `Bearer ${token}` } }
+    );
+    if (!adminRes.ok) return false;
+    const rows = (await adminRes.json()) as Array<{ user_id: string }>;
+    return Array.isArray(rows) && rows.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (await isAdmin(req)) return next();
+  if (await verifySupabaseAdmin(req)) return next();
   res.status(401).json({ error: "Admin sign-in required." });
 }
 

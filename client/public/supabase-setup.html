@@ -26,7 +26,7 @@
         <ol>
           <li>In <strong>Authentication → Users</strong>, create an email/password user.</li>
           <li>Copy that user's UUID from the users list.</li>
-          <li>In SQL Editor, run <code>insert into public.admin_users (user_id) values ('YOUR-USER-UUID') on conflict (user_id) do nothing;</code></li>
+          <li>In SQL Editor, run <code>insert into public.admin_users (user_id, role) select id, 'super_admin' from auth.users where email = 'honlariswellness@gmail.com' on conflict (user_id) do update set role = 'super_admin';</code></li>
         </ol>
         <h2>3. Configure public Supabase settings</h2>
         <p>Set these browser-safe build values, then rebuild and redeploy the static site:</p>
