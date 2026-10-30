@@ -140,8 +140,41 @@ create policy "Admins can delete Honlaris media"
     and public.is_site_admin((select auth.uid()))
   );
 
--- After creating the first user under Authentication > Users, promote that account
--- to super admin (run once, as the project owner):
+-- Bookings submitted from the public website.
+create table if not exists public.bookings (
+  id text primary key,
+  name text not null,
+  phone text not null,
+  service text not null,
+  date text not null,
+  time text not null,
+  note text,
+  status text not null default 'new' check (status in ('new', 'done')),
+  created_at timestamptz not null default now()
+);
+
+alter table public.bookings enable row level security;
+
+drop policy if exists "Anyone can create a booking" on public.bookings;
+create policy "Anyone can create a booking"
+  on public.bookings for insert to anon, authenticated
+  with check (true);
+
+drop policy if exists "Admins can read bookings" on public.bookings;
+create policy "Admins can read bookings"
+  on public.bookings for select to authenticated
+  using (public.is_site_admin((select auth.uid())));
+
+drop policy if exists "Admins can update bookings" on public.bookings;
+create policy "Admins can update bookings"
+  on public.bookings for update to authenticated
+  using (public.is_site_admin((select auth.uid())))
+  with check (public.is_site_admin((select auth.uid())));
+
+drop policy if exists "Admins can delete bookings" on public.bookings;
+create policy "Admins can delete bookings"
+  on public.bookings for delete to authenticated
+  using (public.is_site_admin((select auth.uid())));
 -- insert into public.admin_users (user_id, role)
 -- values ('PASTE_AUTH_USER_UUID_HERE', 'super_admin')
 -- on conflict (user_id) do update set role = 'super_admin';
