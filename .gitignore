@@ -116,3 +116,5 @@ temp/
 # Honlaris local data store (content, bookings, session secret)
 server/data/
 
+
+.vercel
