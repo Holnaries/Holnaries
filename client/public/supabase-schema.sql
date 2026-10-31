@@ -1,5 +1,9 @@
--- Honlaris Wellness static CMS schema for Supabase.
+-- Honlaris Wellness CMS schema for Supabase.
 -- Run this SQL in the Supabase SQL Editor using the project owner role.
+--
+-- Admin access is a single role: an account is either an admin (listed in
+-- public.admin_users) or it is not. There are no super admins and the website
+-- no longer creates admins -- accounts are created in Supabase itself.
 
 create table if not exists public.site_content (
   id text primary key check (id = 'home'),
@@ -11,16 +15,11 @@ create table if not exists public.site_content (
 create table if not exists public.admin_users (
   user_id uuid primary key references auth.users(id) on delete cascade,
   email text,
-  role text not null default 'admin' check (role in ('admin', 'super_admin')),
   created_at timestamptz not null default now()
 );
 
 -- Upgrade path for projects that ran an older version of this schema:
-alter table public.admin_users
-  add column if not exists role text not null default 'admin'
-  check (role in ('admin', 'super_admin'));
-alter table public.admin_users
-  add column if not exists email text;
+alter table public.admin_users add column if not exists email text;
 
 -- Backfill email from auth.users (run as project owner):
 update public.admin_users a
@@ -28,7 +27,7 @@ set email = u.email
 from auth.users u
 where a.user_id = u.id and (a.email is null or a.email = '');
 
--- Helper functions (SECURITY DEFINER) to avoid infinite recursion in RLS:
+-- Helper function (SECURITY DEFINER) to avoid infinite recursion in RLS:
 -- policies on admin_users must not subquery admin_users directly.
 create or replace function public.is_site_admin(uid uuid)
 returns boolean
@@ -39,17 +38,7 @@ as $$
   select exists (select 1 from public.admin_users where user_id = uid);
 $$;
 
-create or replace function public.is_super_admin(uid uuid)
-returns boolean
-language sql
-security definer
-set search_path = public
-as $$
-  select exists (select 1 from public.admin_users where user_id = uid and role = 'super_admin');
-$$;
-
 grant execute on function public.is_site_admin(uuid) to anon, authenticated;
-grant execute on function public.is_super_admin(uuid) to anon, authenticated;
 
 alter table public.site_content enable row level security;
 alter table public.admin_users enable row level security;
@@ -70,30 +59,19 @@ create policy "Admins can update site content"
   using (public.is_site_admin((select auth.uid())))
   with check (public.is_site_admin((select auth.uid())));
 
+-- An admin can only read their own record, which is all the site needs to
+-- confirm access. Adding or removing admin records is done from Supabase.
 drop policy if exists "Admins can see their own admin record" on public.admin_users;
 drop policy if exists "Admins can read admin records" on public.admin_users;
-create policy "Admins can read admin records"
+create policy "Admins can see their own admin record"
   on public.admin_users for select to authenticated
-  using (
-    user_id = (select auth.uid())
-    or public.is_super_admin((select auth.uid()))
-  );
+  using (user_id = (select auth.uid()));
 
 drop policy if exists "Super admins can add admins" on public.admin_users;
-create policy "Super admins can add admins"
-  on public.admin_users for insert to authenticated
-  with check (
-    public.is_super_admin((select auth.uid()))
-    and role = 'admin'
-  );
-
 drop policy if exists "Super admins can remove admins" on public.admin_users;
-create policy "Super admins can remove admins"
-  on public.admin_users for delete to authenticated
-  using (
-    public.is_super_admin((select auth.uid()))
-    and role = 'admin'
-  );
+
+-- Older versions of this schema used a super-admin role; remove the leftovers.
+drop function if exists public.is_super_admin(uuid);
 
 grant select on public.site_content to anon, authenticated;
 grant insert, update on public.site_content to authenticated;
@@ -140,47 +118,11 @@ create policy "Admins can delete Honlaris media"
     and public.is_site_admin((select auth.uid()))
   );
 
--- Bookings submitted from the public website.
-create table if not exists public.bookings (
-  id text primary key,
-  name text not null,
-  phone text not null,
-  service text not null,
-  date text not null,
-  time text not null,
-  note text,
-  status text not null default 'new' check (status in ('new', 'done')),
-  created_at timestamptz not null default now()
-);
-
-alter table public.bookings enable row level security;
-
-drop policy if exists "Anyone can create a booking" on public.bookings;
-create policy "Anyone can create a booking"
-  on public.bookings for insert to anon, authenticated
-  with check (true);
-
-drop policy if exists "Admins can read bookings" on public.bookings;
-create policy "Admins can read bookings"
-  on public.bookings for select to authenticated
-  using (public.is_site_admin((select auth.uid())));
-
-drop policy if exists "Admins can update bookings" on public.bookings;
-create policy "Admins can update bookings"
-  on public.bookings for update to authenticated
-  using (public.is_site_admin((select auth.uid())))
-  with check (public.is_site_admin((select auth.uid())));
-
-drop policy if exists "Admins can delete bookings" on public.bookings;
-create policy "Admins can delete bookings"
-  on public.bookings for delete to authenticated
-  using (public.is_site_admin((select auth.uid())));
--- insert into public.admin_users (user_id, role)
--- values ('PASTE_AUTH_USER_UUID_HERE', 'super_admin')
--- on conflict (user_id) do update set role = 'super_admin';
+-- Setup (one time, as project owner):
+-- 1. Create the admin account in Authentication > Users (email + password).
+-- 2. Allow it to sign in to /admin by adding it to admin_users:
 --
--- Additional admins can then be added from the website's admin panel (Security tab)
--- or directly:
--- insert into public.admin_users (user_id, role)
--- values ('PASTE_AUTH_USER_UUID_HERE', 'admin')
--- on conflict (user_id) do nothing;
+--   insert into public.admin_users (user_id, email)
+--   select id, email from auth.users
+--   where email = 'you@example.com'
+--   on conflict (user_id) do update set email = excluded.email;

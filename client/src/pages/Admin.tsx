@@ -19,7 +19,6 @@ import {
   Stethoscope,
   Trash2,
   Upload,
-  UserPlus,
   Users,
 } from "lucide-react";
 import BrandMark from "@/components/BrandMark";
@@ -44,17 +43,11 @@ import {
   type BookingRecord,
 } from "@/lib/api";
 import {
-  addAdmin,
   changeOwnPassword,
   isSiteAdmin,
-  isSuperAdmin,
-  listAdmins,
-  removeAdmin,
   saveHomeContent,
-  sendPasswordReset,
   supabase,
   uploadSiteImage,
-  type AdminRecord,
 } from "@/lib/supabase";
 
 type Panel =
@@ -78,7 +71,7 @@ const panels: { id: Panel; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "about", label: "About the clinic", icon: Users },
   { id: "testimonials", label: "Patient stories", icon: MessageSquareQuote },
   { id: "contact", label: "Contact & footer", icon: ShieldCheck },
-  { id: "security", label: "Security & team", icon: Lock },
+  { id: "security", label: "Security", icon: Lock },
 ];
 
 function Field({
@@ -360,26 +353,13 @@ export default function Admin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Security / team state (Supabase mode only)
-  const [isSuper, setIsSuper] = useState(false);
-  const [admins, setAdmins] = useState<AdminRecord[]>([]);
-  const [teamLoading, setTeamLoading] = useState(false);
-  const [teamNotice, setTeamNotice] = useState("");
-  const [teamError, setTeamError] = useState("");
-  const [newAdminId, setNewAdminId] = useState("");
-  const [newAdminEmail, setNewAdminEmail] = useState("");
-  const [newAdminPassword, setNewAdminPassword] = useState("");
+  // Security (Supabase mode only)
   const [pwCurrent, setPwCurrent] = useState("");
   const [pwNew, setPwNew] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
   const [pwBusy, setPwBusy] = useState(false);
   const [pwNotice, setPwNotice] = useState("");
   const [pwError, setPwError] = useState("");
-
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetBusy, setResetBusy] = useState(false);
-  const [resetNotice, setResetNotice] = useState("");
-  const [resetError, setResetError] = useState("");
 
   const useSupabase = Boolean(supabase);
 
@@ -454,35 +434,6 @@ export default function Admin() {
     };
   }, [session?.user.id, authorized]);
 
-  // Supabase mode: load admin role + team list once authorized.
-  useEffect(() => {
-    if (!supabase || !session || !authorized) return;
-    let live = true;
-    void (async () => {
-      try {
-        const superFlag = await isSuperAdmin(session.user.id);
-        if (!live) return;
-        setIsSuper(superFlag);
-        if (superFlag) {
-          setTeamLoading(true);
-          const list = await listAdmins();
-          if (live) setAdmins(list);
-        }
-      } catch (loadError) {
-        if (live)
-          setTeamError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Could not load admin team."
-          );
-      } finally {
-        if (live) setTeamLoading(false);
-      }
-    })();
-    return () => {
-      live = false;
-    };
-  }, [session?.user.id, authorized]);
   useEffect(() => {
     if (supabase || !authorized) return;
     let live = true;
@@ -588,85 +539,6 @@ export default function Admin() {
     }
   }
 
-  async function handleAddAdmin(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setTeamError("");
-    setTeamNotice("");
-    const email = newAdminEmail.trim();
-    if (!email) {
-      setTeamError("Enter the new admin's email address.");
-      return;
-    }
-    if (newAdminPassword.length < 8) {
-      setTeamError("Password must be at least 8 characters.");
-      return;
-    }
-    setTeamLoading(true);
-    try {
-      await addAdmin(email, newAdminPassword);
-      setTeamNotice(
-        "Admin created. They can sign in with the email and password you set (confirm their email first if confirmation is enabled in Supabase)."
-      );
-      setNewAdminEmail("");
-      setNewAdminPassword("");
-      setAdmins(await listAdmins());
-    } catch (addError) {
-      console.error("addAdmin failed:", addError);
-      const msg =
-        addError instanceof Error
-          ? addError.message
-          : typeof addError === "object" && addError !== null && "message" in addError
-          ? String((addError as { message: unknown }).message)
-          : String(addError);
-      setTeamError(msg || "Could not add admin.");
-    } finally {
-      setTeamLoading(false);
-    }
-  }
-
-  async function handleRemoveAdmin(userId: string) {
-    setTeamError("");
-    setTeamNotice("");
-    if (!window.confirm("Remove this admin? They will lose access immediately.")) return;
-    setTeamLoading(true);
-    try {
-      await removeAdmin(userId);
-      setTeamNotice("Admin removed.");
-      setAdmins(await listAdmins());
-    } catch (removeError) {
-      setTeamError(
-        removeError instanceof Error
-          ? removeError.message
-          : "Could not remove admin."
-      );
-    } finally {
-      setTeamLoading(false);
-    }
-  }
-
-  async function handleSendReset(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setResetError("");
-    setResetNotice("");
-    if (!resetEmail.trim()) {
-      setResetError("Enter the admin's email address.");
-      return;
-    }
-    setResetBusy(true);
-    try {
-      await sendPasswordReset(resetEmail);
-      setResetNotice(
-        "Reset link sent. The admin will receive an email to set a new password."
-      );
-      setResetEmail("");
-    } catch (resetErr) {
-      setResetError(
-        resetErr instanceof Error ? resetErr.message : "Could not send reset link."
-      );
-    } finally {
-      setResetBusy(false);
-    }
-  }
 
   async function handleSave() {
     if (supabase ? !session : !authorized) return;
@@ -2346,112 +2218,6 @@ export default function Admin() {
                   </form>
                 )}
               </PanelCard>
-
-              {supabase && isSuper && (
-                <PanelCard
-                  title="Admin team"
-                  description="Super admin only. Add or remove administrators. The super admin account cannot be removed."
-                >
-                  <div className="admin-form-grid">
-                    <div>
-                      <p className="admin-field-label">Current administrators</p>
-                      {teamLoading && <p className="admin-notice">Loading…</p>}
-                      {teamError && <p className="admin-error">{teamError}</p>}
-                      {teamNotice && <p className="admin-notice">{teamNotice}</p>}
-                      <ul className="admin-admin-list">
-                        {admins.map(admin => (
-                          <li key={admin.user_id} className="admin-admin-row">
-                            <div>
-                              <code className="admin-admin-id">
-                              {admin.email || admin.user_id}
-                            </code>
-                              <span className="admin-admin-role">
-                                {admin.role === "super_admin" ? "Super admin" : "Admin"}
-                                {admin.user_id === session?.user.id ? " (you)" : ""}
-                              </span>
-                            </div>
-                            {admin.role !== "super_admin" &&
-                              admin.user_id !== session?.user.id && (
-                                <button
-                                  type="button"
-                                  className="admin-icon-button"
-                                  title="Remove admin"
-                                  onClick={() => void handleRemoveAdmin(admin.user_id)}
-                                  disabled={teamLoading}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <form className="admin-form-grid" onSubmit={handleAddAdmin}>
-                      <Field
-                        label="New admin email"
-                        hint="The email they will use to sign in."
-                        value={newAdminEmail}
-                        onChange={setNewAdminEmail}
-                        type="email"
-                      />
-                      <Field
-                        label="Initial password"
-                        hint="At least 8 characters. They can change it later."
-                        value={newAdminPassword}
-                        onChange={setNewAdminPassword}
-                        type="password"
-                      />
-                      <div className="admin-form-actions">
-                        <button
-                          className="button button--green"
-                          type="submit"
-                          disabled={teamLoading}
-                        >
-                          <UserPlus size={16} /> Add admin
-                        </button>
-                      </div>
-                    </form>
-                    <form className="admin-form-grid" onSubmit={handleSendReset}>
-                      <Field
-                        label="Reset an admin's password"
-                        hint="Enter the admin's email. They will receive a link to set a new password."
-                        value={resetEmail}
-                        onChange={setResetEmail}
-                        type="email"
-                      />
-                      <div className="admin-form-actions">
-                        <button
-                          className="button button--ghost"
-                          type="submit"
-                          disabled={resetBusy}
-                        >
-                          {resetBusy ? "Sending…" : "Send reset link"}
-                        </button>
-                      </div>
-                      {resetError && <p className="admin-error">{resetError}</p>}
-                      {resetNotice && <p className="admin-notice">{resetNotice}</p>}
-                    </form>
-                    <p className="admin-notice">
-                      To reset another admin's password, open the Supabase
-                      dashboard → Authentication → Users → select the user → "Send
-                      password recovery". (Emails are not stored in this panel
-                      for privacy.)
-                    </p>
-                  </div>
-                </PanelCard>
-              )}
-
-              {supabase && !isSuper && (
-                <PanelCard
-                  title="Admin team"
-                  description="Only the super admin can manage other administrators."
-                >
-                  <p className="admin-notice">
-                    You are signed in as a standard admin. Contact the super admin
-                    to add or remove team members.
-                  </p>
-                </PanelCard>
-              )}
             </>
           )}
           <div className="admin-bottom-save">

@@ -3208,31 +3208,35 @@ body {
   .carousel-arrow { width: 44px; height: 44px; }
 }
 
-/* Consultation process photo: SVG clip-path frame (curved left, square right). */
+/* ==========================================================================
+   Consultation photo (process section): reference frame.
+   Wide image with a pill-shaped left edge that bleeds to the right edge of
+   the viewport, stretched to the full height of the section so the frame
+   touches the top and bottom of the copy column.
+   ========================================================================== */
+html {
+  overflow-x: clip;
+}
 .process {
-  background: #fbfaf7;
-  grid-template-columns: 0.95fr 1.05fr;
+  grid-template-columns: 0.85fr 1.15fr;
   align-items: stretch;
-  gap: 2rem;
-  min-height: 420px;
-  margin: 0 auto;
-  padding: 2rem;
 }
 .process__copy {
   align-self: center;
-  max-width: 460px;
-  padding: 44px 0;
 }
 .process__photo {
-  clip-path: url(#consultation-frame-shape);
-  height: 100%;
-  min-height: 420px;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: auto;
+  align-self: stretch;
+  border-radius: 999px 0 0 999px;
+  margin: 0 calc(-1 * (max(0px, (100vw - 1320px) / 2) + clamp(26px, 6vw, 92px))) 0 0;
   overflow: hidden;
-  background: #e8e5dc;
-  margin-inline: 0;
+  background: #e8e5dd;
 }
 .process__photo img {
-  display: block;
+  min-height: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -3240,83 +3244,143 @@ body {
   border-radius: 0;
 }
 .process__photo figcaption {
-  white-space: normal;
-  bottom: 20px;
-  left: auto;
-  right: 20px;
-  transform: none;
+  display: none;
 }
-@media (max-width: 720px) {
+/* Stack on narrow screens so both people stay fully in frame. */
+@media (max-width: 1100px) {
   .process {
     grid-template-columns: 1fr;
-    gap: 1.5rem;
-    padding: 1.25rem;
+    gap: 34px;
   }
-  .process__photo,
-  .process__photo img {
-    min-height: 280px;
+  .process__copy {
+    align-self: start;
+  }
+  .process__photo {
+    aspect-ratio: 1.5 / 1;
   }
 }
-/* Admin: security / team panel */
+@media (max-width: 640px) {
+  .process__photo {
+    aspect-ratio: 1.3 / 1;
+  }
+}
+
+/* Admin: security panel */
 .admin-form-actions {
   display: flex;
   gap: 12px;
   align-items: center;
 }
-.admin-admin-list {
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.admin-admin-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--white);
-}
-.admin-admin-id {
-  display: block;
-  font-size: 12px;
-  word-break: break-all;
-  color: var(--ink);
-}
-.admin-admin-role {
-  display: block;
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-.admin-icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--white);
-  color: #b33a3a;
-  cursor: pointer;
-}
-.admin-icon-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.admin-field-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink);
-  margin-bottom: 6px;
+
+/* ==========================================================================
+   Phone layout (<= 700px)
+   Header: logo + menu only, booking action moves inside the menu.
+   Hero: photo on top, copy below on the page background (fully readable).
+   ========================================================================== */
+.main-nav__cta {
+  display: none;
 }
 
-/* Default browser zoom: render the site at 110% */
-html {
-  zoom: 1.1;
+@media (max-width: 700px) {
+  .header-cta {
+    display: none;
+  }
+  .menu-toggle {
+    margin-left: auto;
+    margin-right: 0;
+  }
+  .main-nav__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 14px 18px !important;
+    border: 0 !important;
+    border-radius: 30px;
+    background: var(--green);
+    color: #fff !important;
+    font-size: 12px !important;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
+  }
+
+  .hero {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    background: #f7f6f2;
+  }
+  .hero__photo {
+    position: relative;
+    inset: auto;
+    z-index: 0;
+    height: clamp(330px, 56vh, 440px);
+    margin-top: 68px;
+  }
+  .hero__photo::after {
+    background: linear-gradient(
+      180deg,
+      #f7f6f2 0%,
+      rgba(247, 246, 242, 0) 18%
+    );
+  }
+  .hero__photo img {
+    /* Keep the subject's face centred in the narrow frame. */
+    object-position: 76% 30%;
+  }
+  .hero__content {
+    width: auto;
+    max-width: none;
+    position: relative;
+    z-index: 1;
+    padding: 26px 20px 42px;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 10.4vw, 48px);
+    line-height: 1.02;
+    max-width: none;
+  }
+  .hero__description {
+    max-width: none;
+    margin: 16px 0 22px;
+  }
+  .hero__actions {
+    gap: 12px;
+  }
+
+  .trust-strip__inner {
+    flex-wrap: wrap;
+    gap: 14px 18px;
+    padding: 18px 20px;
+  }
+  .trust-item {
+    flex: 0 0 calc(50% - 9px);
+    gap: 10px;
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+  .trust-item__icon {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+  }
+
+  .service-grid.h-carousel .service-card {
+    flex: 0 0 80%;
+  }
+  .service-card__image {
+    height: 200px;
+  }
+
+  .process {
+    gap: 28px;
+    padding-top: 64px;
+    padding-bottom: 64px;
+  }
+  .services {
+    padding-top: 48px;
+    padding-bottom: 64px;
+  }
 }

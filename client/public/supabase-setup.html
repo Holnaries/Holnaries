@@ -22,12 +22,13 @@
         <h2>1. Create the tables and image bucket</h2>
         <p>Open your Supabase project's SQL Editor, download and run the schema. It enables row-level security and makes website copy readable to visitors while reserving changes for authorised admins.</p>
         <a class="button secondary" href="/supabase-schema.sql" download>Download the SQL schema</a>
-        <h2>2. Create and authorise the first admin</h2>
+        <h2>2. Authorise the admin account</h2>
         <ol>
           <li>In <strong>Authentication → Users</strong>, create an email/password user.</li>
-          <li>Copy that user's UUID from the users list.</li>
-          <li>In SQL Editor, run <code>insert into public.admin_users (user_id, role) select id, 'super_admin' from auth.users where email = 'honlariswellness@gmail.com' on conflict (user_id) do update set role = 'super_admin';</code></li>
+          <li>In SQL Editor, run <code>insert into public.admin_users (user_id, email) select id, email from auth.users where email = 'you@example.com' on conflict (user_id) do update set email = excluded.email;</code></li>
+          <li>To add more admins later, create another user and repeat the insert. Remove an admin by deleting their row from <code>public.admin_users</code>.</li>
         </ol>
+        <p>There is no super-admin role and no in-website admin creation — the admin panel only signs accounts in and lets them change their own password.</p>
         <h2>3. Configure public Supabase settings</h2>
         <p>Set these browser-safe build values, then rebuild and redeploy the static site:</p>
         <div class="code">VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co<br />VITE_SUPABASE_ANON_KEY=YOUR_PUBLIC_ANON_OR_PUBLISHABLE_KEY</div>

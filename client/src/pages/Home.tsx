@@ -256,6 +256,16 @@ export default function Home() {
                 {item.label}
               </a>
             ))}
+            <a
+              className="main-nav__cta"
+              href={content.hero.primaryHref}
+              onClick={event => {
+                setMenuOpen(false);
+                onAnchorClick(event, content.hero.primaryHref);
+              }}
+            >
+              {content.hero.primaryCta} <ArrowUpRight size={14} />
+            </a>
           </nav>
           <a
             className="button button--green header-cta"
@@ -311,17 +321,6 @@ export default function Home() {
         </section>
 
         <section className="process section-wrap" id="process">
-          <svg
-            aria-hidden="true"
-            focusable="false"
-            style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}
-          >
-            <defs>
-              <clipPath id="consultation-frame-shape" clipPathUnits="objectBoundingBox">
-                <path d="M .20,0 C .08,.10 0,.27 0,.50 C 0,.73 .08,.90 .20,1 L 1,1 L 1,0 Z" />
-              </clipPath>
-            </defs>
-          </svg>
           <div className="process__copy" data-reveal>
             <p className="eyebrow">{content.process.eyebrow}</p>
             <h2>
