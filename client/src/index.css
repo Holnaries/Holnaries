@@ -749,15 +749,18 @@ img {
   font-size: 9px;
   line-height: 1.7;
 }
-.footer-brand__circles {
+.footer-brand__socials {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 12px;
 }
-.footer-brand__circles i {
-  width: 17px;
-  height: 17px;
-  border: 1px solid #d9dbd4;
-  border-radius: 50%;
+.footer-brand__socials a {
+  display: inline-flex;
+  color: #747970;
+  transition: color 0.2s ease;
+}
+.footer-brand__socials a:hover {
+  color: var(--green);
 }
 .footer-links,
 .footer-contact {
@@ -3172,9 +3175,8 @@ body {
   font-size: 14px;
   max-width: 260px;
 }
-.footer-brand__circles i {
-  width: 20px;
-  height: 20px;
+.footer-brand__socials a {
+  color: #747970;
 }
 
 /* ---------- Responsive ---------- */
