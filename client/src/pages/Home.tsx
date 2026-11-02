@@ -61,7 +61,6 @@ function Brand({ content }: { content: HomeContent }) {
     >
       <span className="brand-symbol">
         <BrandMark />
-        <Flower2 size={11} strokeWidth={1.4} />
       </span>
       <span className="brand-words">
         <strong>{content.brand.name}</strong>
