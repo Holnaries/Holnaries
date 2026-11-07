@@ -77,6 +77,50 @@ grant select on public.site_content to anon, authenticated;
 grant insert, update on public.site_content to authenticated;
 grant select on public.admin_users to authenticated;
 
+-- Consultation requests submitted from the public booking form.
+create table if not exists public.bookings (
+  id text primary key,
+  name text not null,
+  phone text not null,
+  service text not null,
+  date date not null,
+  time text not null,
+  note text,
+  status text not null default 'new' check (status in ('new', 'done')),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists bookings_created_at_idx
+  on public.bookings (created_at desc);
+
+alter table public.bookings enable row level security;
+
+-- Visitors may only create a request; they can never read requests back.
+drop policy if exists "Anyone can create a consultation request" on public.bookings;
+create policy "Anyone can create a consultation request"
+  on public.bookings for insert to anon, authenticated
+  with check (status = 'new');
+
+-- Only signed-in site admins can read or manage requests.
+drop policy if exists "Admins can read consultation requests" on public.bookings;
+create policy "Admins can read consultation requests"
+  on public.bookings for select to authenticated
+  using (public.is_site_admin((select auth.uid())));
+
+drop policy if exists "Admins can update consultation requests" on public.bookings;
+create policy "Admins can update consultation requests"
+  on public.bookings for update to authenticated
+  using (public.is_site_admin((select auth.uid())))
+  with check (public.is_site_admin((select auth.uid())));
+
+drop policy if exists "Admins can delete consultation requests" on public.bookings;
+create policy "Admins can delete consultation requests"
+  on public.bookings for delete to authenticated
+  using (public.is_site_admin((select auth.uid())));
+
+grant insert on public.bookings to anon, authenticated;
+grant select, update, delete on public.bookings to authenticated;
+
 -- Create the public bucket used for admin-uploaded website images.
 insert into storage.buckets (id, name, public)
 values ('site-media', 'site-media', true)
@@ -120,9 +164,12 @@ create policy "Admins can delete Honlaris media"
 
 -- Setup (one time, as project owner):
 -- 1. Create the admin account in Authentication > Users (email + password).
+--    If it was created by signing up, confirm it (Authentication > Users >
+--    the user > "Confirm email", or enable "Auto Confirm User").
 -- 2. Allow it to sign in to /admin by adding it to admin_users:
 --
 --   insert into public.admin_users (user_id, email)
 --   select id, email from auth.users
 --   where email = 'you@example.com'
 --   on conflict (user_id) do update set email = excluded.email;
+

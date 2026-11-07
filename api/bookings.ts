@@ -109,7 +109,13 @@ export default async function handler(req: any, res: any) {
       { headers: { apikey: key, Authorization: `Bearer ${token}` } }
     );
     const data = await r.json().catch(() => []);
-    json(res, r.status, { bookings: Array.isArray(data) ? data : [] });
+    const bookings = Array.isArray(data)
+      ? data.map((row: Record<string, unknown>) => ({
+          ...row,
+          createdAt: row.created_at ?? row.createdAt ?? "",
+        }))
+      : [];
+    json(res, r.status, { bookings });
     return;
   }
 
