@@ -13,7 +13,14 @@ function parseCookie(header: string): Record<string, string> {
     const eq = part.indexOf("=");
     if (eq < 0) continue;
     const key = part.slice(0, eq).trim();
-    if (key) jar[key] = decodeURIComponent(part.slice(eq + 1).trim());
+    if (!key) continue;
+    const raw = part.slice(eq + 1).trim();
+    try {
+      jar[key] = decodeURIComponent(raw);
+    } catch {
+      // Ignore malformed percent-encoding instead of throwing a 500.
+      jar[key] = raw;
+    }
   }
   return jar;
 }
@@ -21,7 +28,13 @@ function parseCookie(header: string): Record<string, string> {
 function serializeCookie(
   name: string,
   value: string,
-  options: { httpOnly?: boolean; sameSite?: string; path?: string; maxAge?: number } = {}
+  options: {
+    httpOnly?: boolean;
+    sameSite?: string;
+    path?: string;
+    maxAge?: number;
+    secure?: boolean;
+  } = {}
 ): string {
   let out = `${name}=${encodeURIComponent(value)}`;
   if (options.path) out += `; Path=${options.path}`;
@@ -36,6 +49,7 @@ function serializeCookie(
   }
   if (options.httpOnly) out += "; HttpOnly";
   if (options.sameSite) out += `; SameSite=${options.sameSite}`;
+  if (options.secure) out += "; Secure";
   return out;
 }
 
@@ -93,7 +107,47 @@ function timingSafeEqualStrings(a: string, b: string): boolean {
   return crypto.timingSafeEqual(hashA, hashB);
 }
 
-async function issueSession(res: Response) {
+// ---------------------------------------------------------------------------
+// Lightweight in-memory rate limiting (the built-in server is single-process).
+// The public deployment is served by Vercel functions instead.
+// ---------------------------------------------------------------------------
+type RateEntry = { count: number; resetAt: number };
+const rateLimits = new Map<string, RateEntry>();
+
+function rateLimit(
+  bucket: string,
+  req: Request,
+  limit: number,
+  windowMs: number
+): { allowed: boolean; retryAfter: number } {
+  const now = Date.now();
+  if (rateLimits.size > 5000) {
+    for (const [key, entry] of rateLimits) {
+      if (entry.resetAt <= now) rateLimits.delete(key);
+    }
+  }
+  // Socket address cannot be spoofed with a header (unlike X-Forwarded-For).
+  const id = `${bucket}:${req.socket.remoteAddress ?? "unknown"}`;
+  const entry = rateLimits.get(id);
+  if (!entry || entry.resetAt <= now) {
+    rateLimits.set(id, { count: 1, resetAt: now + windowMs });
+    return { allowed: true, retryAfter: 0 };
+  }
+  if (entry.count >= limit) {
+    return {
+      allowed: false,
+      retryAfter: Math.max(1, Math.ceil((entry.resetAt - now) / 1000)),
+    };
+  }
+  entry.count += 1;
+  return { allowed: true, retryAfter: 0 };
+}
+
+function clearRateLimit(bucket: string, req: Request) {
+  rateLimits.delete(`${bucket}:${req.socket.remoteAddress ?? "unknown"}`);
+}
+
+async function issueSession(req: Request, res: Response) {
   const token = await new SignJWT({ role: "admin" })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -106,6 +160,7 @@ async function issueSession(res: Response) {
       sameSite: "lax",
       path: "/",
       maxAge: SESSION_DAYS * 24 * 60 * 60,
+      secure: req.secure || req.headers["x-forwarded-proto"] === "https",
     })
   );
 }
@@ -224,6 +279,14 @@ export function registerHonlarisRoutes(app: Express) {
 
   // ---- admin auth ---------------------------------------------------------
   app.post("/api/admin/login", async (req, res) => {
+    const gate = rateLimit("login", req, 10, 15 * 60 * 1000);
+    if (!gate.allowed) {
+      res.setHeader("Retry-After", String(gate.retryAfter));
+      res.status(429).json({
+        error: "Too many sign-in attempts. Please try again later.",
+      });
+      return;
+    }
     const adminPassword = process.env.ADMIN_PASSWORD ?? "";
     if (!adminPassword) {
       res.status(500).json({ error: "ADMIN_PASSWORD is not set on the server." });
@@ -238,7 +301,8 @@ export function registerHonlarisRoutes(app: Express) {
       res.status(401).json({ error: "Incorrect password." });
       return;
     }
-    await issueSession(res);
+    await issueSession(req, res);
+    clearRateLimit("login", req);
     res.json({ ok: true });
   });
 
@@ -276,6 +340,14 @@ export function registerHonlarisRoutes(app: Express) {
 
   // ---- bookings -----------------------------------------------------------
   app.post("/api/bookings", (req, res) => {
+    const gate = rateLimit("booking", req, 10, 10 * 60 * 1000);
+    if (!gate.allowed) {
+      res.setHeader("Retry-After", String(gate.retryAfter));
+      res.status(429).json({
+        error: "Too many requests. Please try again in a few minutes.",
+      });
+      return;
+    }
     const parsed = bookingSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid booking." });

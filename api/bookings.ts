@@ -59,9 +59,27 @@ export default async function handler(req: any, res: any) {
     const service = String(body.service ?? "").trim();
     const date = String(body.date ?? "").trim();
     const time = String(body.time ?? "").trim();
-    const note = body.note ? String(body.note).trim() : null;
+    const note = body.note ? String(body.note).trim() : "";
     if (!name || !phone || !service || !date || !time) {
       json(res, 400, { error: "Missing required booking fields." });
+      return;
+    }
+    if (
+      name.length > 120 ||
+      phone.length > 20 ||
+      service.length > 120 ||
+      time.length > 20 ||
+      note.length > 600
+    ) {
+      json(res, 400, { error: "One of the fields is too long." });
+      return;
+    }
+    if (!/^[0-9+()\-\s]{6,20}$/.test(phone)) {
+      json(res, 400, { error: "Please enter a valid phone number." });
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      json(res, 400, { error: "Please choose a valid date." });
       return;
     }
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -72,7 +90,7 @@ export default async function handler(req: any, res: any) {
       service,
       date,
       time,
-      note,
+      note: note || null,
       status: "new",
       created_at: new Date().toISOString(),
     };
@@ -87,7 +105,14 @@ export default async function handler(req: any, res: any) {
       body: JSON.stringify(row),
     });
     if (!r.ok) {
-      json(res, r.status, { error: await r.text() });
+      console.error(
+        "Booking insert failed:",
+        r.status,
+        (await r.text()).slice(0, 500)
+      );
+      json(res, 500, {
+        error: "Could not save your request. Please try again.",
+      });
       return;
     }
     json(res, 201, { ok: true, id });
@@ -108,14 +133,23 @@ export default async function handler(req: any, res: any) {
       `${url}/rest/v1/bookings?select=*&order=created_at.desc`,
       { headers: { apikey: key, Authorization: `Bearer ${token}` } }
     );
-    const data = await r.json().catch(() => []);
+    if (!r.ok) {
+      console.error(
+        "Booking list failed:",
+        r.status,
+        (await r.text()).slice(0, 500)
+      );
+      json(res, 502, { error: "Could not load consultation requests." });
+      return;
+    }
+    const data = await r.json().catch(() => null);
     const bookings = Array.isArray(data)
       ? data.map((row: Record<string, unknown>) => ({
           ...row,
           createdAt: row.created_at ?? row.createdAt ?? "",
         }))
       : [];
-    json(res, r.status, { bookings });
+    json(res, 200, { bookings });
     return;
   }
 

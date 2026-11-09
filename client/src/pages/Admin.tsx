@@ -483,7 +483,10 @@ export default function Admin() {
       password,
     });
     if (loginError) {
-      setError(loginError.message);
+      const message = /email not confirmed/i.test(loginError.message)
+        ? "This admin email is not confirmed yet. Confirm it in Supabase (Authentication → Users) or from the confirmation email, then sign in again."
+        : loginError.message;
+      setError(message);
       setChecking(false);
     }
   }

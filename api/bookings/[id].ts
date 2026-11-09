@@ -82,11 +82,16 @@ export default async function handler(req: any, res: any) {
         body: JSON.stringify({ status }),
       }
     );
-    json(
-      res,
-      r.ok ? 200 : r.status,
-      r.ok ? { ok: true } : { error: await r.text() }
-    );
+    if (!r.ok) {
+      console.error(
+        "Booking update failed:",
+        r.status,
+        (await r.text()).slice(0, 500)
+      );
+      json(res, 500, { error: "Could not update this request." });
+      return;
+    }
+    json(res, 200, { ok: true });
     return;
   }
 
@@ -102,11 +107,16 @@ export default async function handler(req: any, res: any) {
         },
       }
     );
-    json(
-      res,
-      r.ok ? 200 : r.status,
-      r.ok ? { ok: true } : { error: await r.text() }
-    );
+    if (!r.ok) {
+      console.error(
+        "Booking delete failed:",
+        r.status,
+        (await r.text()).slice(0, 500)
+      );
+      json(res, 500, { error: "Could not delete this request." });
+      return;
+    }
+    json(res, 200, { ok: true });
     return;
   }
 
