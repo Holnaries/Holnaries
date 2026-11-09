@@ -1202,6 +1202,59 @@ img {
   font-size: 9px;
   line-height: 1.6;
 }
+.admin-identity {
+  display: grid;
+  gap: 4px;
+  margin: 14px 0;
+  padding: 13px 15px;
+  border: 1px solid #dde5da;
+  border-radius: 12px;
+  background: #f7faf6;
+  color: #5a665a;
+  font-size: 11px;
+  line-height: 1.55;
+  text-align: left;
+}
+.admin-identity p {
+  margin: 0;
+  font-size: 11px;
+}
+.admin-identity strong {
+  color: #26302a;
+}
+.admin-identity > code {
+  overflow-wrap: anywhere;
+  color: #26302a;
+  font-size: 10.5px;
+}
+.admin-identity pre {
+  margin: 2px 0 0;
+  padding: 10px 11px;
+  border-radius: 9px;
+  background: #edf3eb;
+  color: #35433a;
+  font-size: 10px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.admin-identity__copy {
+  justify-self: start;
+  margin-top: 2px;
+  padding: 5px 11px;
+  border: 1px solid #c3d2bf;
+  border-radius: 999px;
+  background: #fff;
+  color: #2f4a34;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.admin-identity__copy:hover {
+  background: #f3f7f2;
+}
 .admin-note svg {
   flex: 0 0 auto;
   color: #607d63;

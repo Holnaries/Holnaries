@@ -725,11 +725,34 @@ export default function Admin() {
             <code>admin_users</code> table. The public site remains unchanged.
           </p>
           {session?.user && (
-            <p className="admin-note">
-              Signed in as <strong>{session.user.email}</strong>
-              <br />
-              User ID: <code>{session.user.id}</code>
-            </p>
+            <div className="admin-identity">
+              <p>
+                Signed in as <strong>{session.user.email}</strong>
+              </p>
+              <p>User ID</p>
+              <code>{session.user.id}</code>
+              <p>
+                As the Supabase project owner, run this in the SQL Editor (or
+                add the same row in Table Editor → <code>admin_users</code>):
+              </p>
+              <pre>{`insert into public.admin_users (user_id, email)
+select id, email from auth.users
+where id = '${session.user.id}'
+on conflict (user_id) do update set email = excluded.email;`}</pre>
+              <button
+                className="admin-identity__copy"
+                type="button"
+                onClick={() => {
+                  const sql = `insert into public.admin_users (user_id, email)
+select id, email from auth.users
+where id = '${session.user.id}'
+on conflict (user_id) do update set email = excluded.email;`;
+                  void navigator.clipboard?.writeText(sql);
+                }}
+              >
+                Copy SQL
+              </button>
+            </div>
           )}
           <button
             className="button button--green"
