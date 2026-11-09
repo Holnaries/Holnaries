@@ -8,10 +8,21 @@ type JsonRes = {
   end: (body: string) => void;
 };
 
+const DEFAULT_SUPABASE_URL = "https://ifdxagmyycmojahdyzzm.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY =
+  "sb_publishable_ghMKMb9idel0s6UpgSyL4A_npbhjBih";
+
+// Public values (same ones the browser receives). Used when the hosting
+// project has no environment variables configured; env vars still win.
 function supabaseConfig(): { url: string; key: string } {
-  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const url =
+    process.env.VITE_SUPABASE_URL ||
+    process.env.SUPABASE_URL ||
+    DEFAULT_SUPABASE_URL;
   const key =
-    process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+    process.env.VITE_SUPABASE_ANON_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    DEFAULT_SUPABASE_ANON_KEY;
   return { url, key };
 }
 

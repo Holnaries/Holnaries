@@ -2,8 +2,19 @@ import { createClient } from "@supabase/supabase-js";
 import type { HomeContent } from "./content";
 import { DEFAULT_CONTENT, normalizeHomeContent } from "./content";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() ?? "";
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? "";
+const DEFAULT_SUPABASE_URL = "https://ifdxagmyycmojahdyzzm.supabase.co";
+const DEFAULT_SUPABASE_ANON_KEY =
+  "sb_publishable_ghMKMb9idel0s6UpgSyL4A_npbhjBih";
+
+// The Supabase project URL and publishable key are public values: they ship to
+// every browser regardless. Keeping them as fallbacks means a deployment of
+// this repo always runs in Supabase mode, even when the hosting project has no
+// environment variables configured. Set VITE_SUPABASE_URL and
+// VITE_SUPABASE_ANON_KEY to point a deployment at a different Supabase project.
+const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL?.trim() || DEFAULT_SUPABASE_URL;
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || DEFAULT_SUPABASE_ANON_KEY;
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
