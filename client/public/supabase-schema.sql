@@ -166,15 +166,9 @@ create policy "Admins can delete Honlaris media"
 -- 1. Create the admin account in Authentication > Users (email + password).
 --    If it was created by signing up, confirm it (Authentication > Users >
 --    the user > "Confirm email", or enable "Auto Confirm User").
--- 2. Allow it to sign in to /admin by adding it to admin_users. The statement
---    below does this automatically for the clinic account when it exists:
+-- 2. Allow it to sign in to /admin by adding it to admin_users:
 --
 --   insert into public.admin_users (user_id, email)
 --   select id, email from auth.users
 --   where email = 'you@example.com'
 --   on conflict (user_id) do update set email = excluded.email;
-
-insert into public.admin_users (user_id, email)
-select id, email from auth.users
-where lower(email) = lower('honlariswellness@gmail.com')
-on conflict (user_id) do update set email = excluded.email;
