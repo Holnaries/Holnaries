@@ -724,6 +724,13 @@ export default function Admin() {
             Ask your Supabase project owner to add this account's user ID to the{" "}
             <code>admin_users</code> table. The public site remains unchanged.
           </p>
+          {session?.user && (
+            <p className="admin-note">
+              Signed in as <strong>{session.user.email}</strong>
+              <br />
+              User ID: <code>{session.user.id}</code>
+            </p>
+          )}
           <button
             className="button button--green"
             type="button"
