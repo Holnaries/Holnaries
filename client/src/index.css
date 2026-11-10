@@ -723,14 +723,6 @@ img {
   min-height: 38px;
   font-size: 9px;
 }
-.booking-banner__ornament {
-  position: absolute;
-  right: 4%;
-  top: -56px;
-  color: rgba(203, 218, 196, 0.1);
-  transform: rotate(-18deg);
-}
-
 .site-footer {
   background: #f1f0eb;
 }
@@ -1885,10 +1877,6 @@ img {
     min-height: 36px;
     padding-inline: 13px;
     font-size: 8px;
-  }
-  .booking-banner__ornament {
-    right: -40px;
-    top: -25px;
   }
   .footer-main {
     grid-template-columns: 1fr 1fr;

@@ -571,9 +571,6 @@ export default function Home() {
               </a>
             </div>
           </div>
-          <span className="booking-banner__ornament">
-            <Flower2 size={210} strokeWidth={0.45} />
-          </span>
         </section>
       </main>
 
