@@ -2497,6 +2497,16 @@ img {
   display: block;
 }
 
+/* Brand mark as an icon: inherits the surrounding colour. */
+.brand-glyph {
+  display: inline-block;
+  flex: none;
+  background-color: currentColor;
+  -webkit-mask: url("/uploads/honlaris-logo.png") center / contain no-repeat;
+  mask: url("/uploads/honlaris-logo.png") center / contain no-repeat;
+  vertical-align: middle;
+}
+
 /* The hero photo is a full-bleed backdrop, not a half panel */
 .hero__photo {
   inset: 0;

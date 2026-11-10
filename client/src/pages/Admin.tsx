@@ -1,11 +1,10 @@
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useState, type ComponentType, type ReactNode } from "react";
 import {
   ArrowLeft,
   CalendarDays,
   Check,
   CheckCircle2,
   FileText,
-  Flower2,
   ImagePlus,
   KeyRound,
   LayoutDashboard,
@@ -22,6 +21,7 @@ import {
   Users,
 } from "lucide-react";
 import BrandMark from "@/components/BrandMark";
+import BrandGlyph from "@/components/BrandGlyph";
 import type { Session } from "@supabase/supabase-js";
 import {
   DEFAULT_CONTENT,
@@ -61,10 +61,18 @@ type Panel =
   | "testimonials"
   | "contact"
   | "security";
-const panels: { id: Panel; label: string; icon: typeof LayoutDashboard }[] = [
+const BrandNavIcon = ({ size = 17 }: { size?: number }) => (
+  <BrandGlyph size={size} />
+);
+
+const panels: {
+  id: Panel;
+  label: string;
+  icon: ComponentType<{ size?: number; strokeWidth?: number }>;
+}[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "bookings", label: "Consultation requests", icon: CalendarDays },
-  { id: "brand", label: "Brand & navigation", icon: Flower2 },
+  { id: "brand", label: "Brand & navigation", icon: BrandNavIcon },
   { id: "hero", label: "Hero section", icon: Sparkles },
   { id: "process", label: "Consultation process", icon: FileText },
   { id: "services", label: "Services", icon: Stethoscope },
@@ -868,7 +876,7 @@ on conflict (user_id) do update set email = excluded.email;`;
               <div className="admin-welcome">
                 <div>
                   <span className="admin-welcome__mark">
-                    <Flower2 size={24} />
+                    <BrandGlyph size={24} />
                   </span>
                   <p className="eyebrow eyebrow--light">
                     A MORE THOUGHTFUL WAY TO WELLNESS

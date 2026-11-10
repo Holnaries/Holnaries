@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   Clock3,
   Facebook,
-  Flower2,
   Heart,
   Instagram,
   Mail,
@@ -23,6 +22,7 @@ import { loadHomeContent } from "@/lib/supabase";
 import { waLink } from "@/lib/contact";
 import BookingModal from "@/components/BookingModal";
 import BrandMark from "@/components/BrandMark";
+import BrandGlyph from "@/components/BrandGlyph";
 import { Link } from "wouter";
 
 const trustIcons = [UserRound, MessageSquareText, ShieldCheck];
@@ -448,7 +448,7 @@ export default function Home() {
               {content.about.linkLabel} <ArrowRight size={14} />
             </a>
             <span className="about__ornament">
-              <Flower2 size={38} strokeWidth={0.8} />
+              <BrandGlyph size={38} />
             </span>
           </div>
         </section>

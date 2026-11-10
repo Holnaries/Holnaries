@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Clock3,
-  Flower2,
   Heart,
   Mail,
   MapPin,
@@ -19,6 +18,7 @@ import { loadHomeContent } from "@/lib/supabase";
 import { telLink, waLink } from "@/lib/contact";
 import BookingModal from "@/components/BookingModal";
 import BrandMark from "@/components/BrandMark";
+import BrandGlyph from "@/components/BrandGlyph";
 
 const trustIcons = [UserRound, MessageSquareText, ShieldCheck];
 
@@ -121,7 +121,7 @@ export default function ServiceDetail() {
               <img src={service.image} alt={service.imageAlt || service.title} />
             ) : (
               <span className="service-hero__placeholder">
-                <Flower2 size={64} strokeWidth={0.7} />
+                <BrandGlyph size={64} />
               </span>
             )}
           </div>
@@ -209,7 +209,7 @@ export default function ServiceDetail() {
             <ul className="benefit-list">
               {detail.benefits.map((benefit, index) => (
                 <li className="benefit-item" key={index}>
-                  <Flower2 size={16} strokeWidth={1.3} />
+                  <BrandGlyph size={16} />
                   <span>{benefit}</span>
                 </li>
               ))}
